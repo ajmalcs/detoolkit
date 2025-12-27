@@ -1,73 +1,41 @@
-# React + TypeScript + Vite
+# Detoolkit
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**The Data Engineering Toolkit**
 
-Currently, two official plugins are available:
+Detoolkit is a comprehensive suite of utilities designed specifically for data engineers and developers. It provides a collection of lightweight, browser-based tools to simplify common daily tasks, from SQL analysis to time conversion and format validation.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+![Detoolkit Dashboard](/public/logo.png)
 
-## React Compiler
+## 🚀 Features
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 🛠️ SQL Suite
+- **SQL Formatter**: Pretty-print and standardize your SQL queries.
+- **SQL Analyzer**: Static analysis to identify performance anti-patterns and improvement opportunities.
+- **SQL Lineage**: Visualize table relationships and join dependencies.
+- **JDBC Builder**: Quickly generate JDBC connection strings for various databases.
 
-## Expanding the ESLint configuration
+### 📊 Data Formats
+- **JSON Utilities**: Validate, format, and convert JSON data.
+- **CSV to JSON**: Convert CSV data into JSON array format instantly.
+- **Parquet Viewer**: Query and inspect Parquet files directly in the browser using DuckDB.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### ☁️ Cloud & Infrastructure
+- **ARN Parser**: Parse and inspect AWS Resource Names (ARNs) to extract partition, region, account, and resource details.
+- **Airflow Cron**: Generate and validate cron schedules for Apache Airflow DAGs.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+### ⏱️ Time & Productivity
+- **Time Conversion**: Compare overlapping working hours across different timezones (useful for remote teams).
+- **Unix Time**: Convert between Unix timestamps and human-readable dates.
+- **Diff Checker**: Side-by-side text and code comparison.
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## 💻 Tech Stack
+- **Framework**: React + Vite
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS + Shadcn UI
+- **Deployment**: GitHub Pages
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## 👨‍💻 Author
+Created by **ajmal.cs**
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## 📄 License
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

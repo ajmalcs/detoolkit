@@ -47,7 +47,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-border">
                     <Link to="/" onClick={onClose} className="flex items-center gap-2 font-bold text-foreground">
-                        <img src="/logo.png" alt="DEtools" className="h-6 w-auto" />
+                        <img src={import.meta.env.BASE_URL + "logo.png"} alt="DEtools" className="h-6 w-auto" />
                     </Link>
                     <button onClick={onClose} className="p-2 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors">
                         <X className="h-5 w-5" />

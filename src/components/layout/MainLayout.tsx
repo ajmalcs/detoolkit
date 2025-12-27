@@ -42,7 +42,7 @@ export function MainLayout() {
                         </Link>
 
                         <Link to="/" className="flex items-center gap-2 font-bold ml-2">
-                            <img src="/logo.png" alt="DEtools" className="h-8 w-auto hidden sm:block" />
+                            <img src={import.meta.env.BASE_URL + "logo.png"} alt="DEtools" className="h-8 w-auto hidden sm:block" />
                         </Link>
                     </div>
 

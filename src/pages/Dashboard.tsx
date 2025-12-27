@@ -17,7 +17,7 @@ export default function Dashboard() {
             {/* Header & Search */}
             {/* Header & Search */}
             <div className="flex flex-col gap-6 items-center text-center py-8">
-                <img src="/logo.png" alt="DEtools" className="h-16 w-auto" />
+                <img src={import.meta.env.BASE_URL + "logo.png"} alt="DEtools" className="h-16 w-auto" />
                 <div className="flex flex-col gap-2">
                     <p className="text-muted-foreground max-w-md mx-auto">
                         Client-side utilities for modern data engineering. No data leaves your browser.

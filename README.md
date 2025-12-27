@@ -2,6 +2,8 @@
 
 **The Data Engineering Toolkit**
 
+🔗 **Live Demo:** [https://ajmalcs.github.io/detoolkit/](https://ajmalcs.github.io/detoolkit/)
+
 Detoolkit is a comprehensive suite of utilities designed specifically for data engineers and developers. It provides a collection of lightweight, browser-based tools to simplify common daily tasks, from SQL analysis to time conversion and format validation.
 
 ![Detoolkit Dashboard](/public/logo.png)

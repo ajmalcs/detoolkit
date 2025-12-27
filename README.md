@@ -28,11 +28,28 @@ Detoolkit is a comprehensive suite of utilities designed specifically for data e
 - **Unix Time**: Convert between Unix timestamps and human-readable dates.
 - **Diff Checker**: Side-by-side text and code comparison.
 
-## 💻 Tech Stack
-- **Framework**: React + Vite
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS + Shadcn UI
-- **Deployment**: GitHub Pages
+## 🛠️ Built With
+
+This project relies on a robust stack of modern web technologies and specialized libraries to deliver high-performance tools in the browser.
+
+### Core Framework
+- **[React](https://react.dev/)**: The library for web and native user interfaces.
+- **[Vite](https://vitejs.dev/)**: Next Generation Frontend Tooling for fast builds and hot replacement.
+- **[TypeScript](https://www.typescriptlang.org/)**: Strongly typed JavaScript for safer and more maintainable code.
+
+### UI & Styling
+- **[Tailwind CSS](https://tailwindcss.com/)**: A utility-first CSS framework for rapid UI development.
+- **[Shadcn UI](https://ui.shadcn.com/)** (via Radix UI): Accessible, reusable, and composable UI components.
+- **[Lucide React](https://lucide.dev/)**: Beautiful & meaningful vector icons.
+- **[CMDK](https://cmdk.paco.me/)**: Fast, accessible, and composable command menu.
+
+### Specialized Libraries
+- **[DuckDB Wasm](https://duckdb.org/docs/api/wasm/overview)**: A high-performance analytical database running entirely in the browser (used for Parquet Viewer).
+- **[Monaco Editor](https://microsoft.github.io/monaco-editor/)**: The code editor that powers VS Code (used for SQL, JSON, and Diff editors).
+- **[dnd-kit](https://dndkit.com/)**: Lightweight, performant, accessible drag-and-drop toolkit (used for Time Converter).
+- **[Mermaid](https://mermaid.js.org/)**: Diagramming and charting tool (used for SQL Lineage).
+- **[node-sql-parser](https://github.com/taozhi8833998/node-sql-parser)** & **[sql-formatter](https://github.com/sql-formatter-org/sql-formatter)**: Parsing and formatting SQL queries.
+- **[date-fns](https://date-fns.org/)**: Modern JavaScript date utility library (used for time calculations).
 
 ## 👨‍💻 Author
 Created by **ajmal.cs**

@@ -13,7 +13,7 @@ Detoolkit is a comprehensive suite of utilities designed specifically for data e
 ### 🛠️ SQL Suite
 - **SQL Formatter**: Pretty-print and standardize your SQL queries.
 - **SQL Analyzer**: Static analysis to identify performance anti-patterns and improvement opportunities.
-- **SQL Lineage**: Visualize table relationships and join dependencies.
+- **SQL Lineage**: Visualize table relationships with an interactive, auto-layout graph.
 - **JDBC Builder**: Quickly generate JDBC connection strings for various databases.
 
 ### 📊 Data Formats
@@ -29,6 +29,10 @@ Detoolkit is a comprehensive suite of utilities designed specifically for data e
 - **Time Conversion**: Compare overlapping working hours across different timezones (useful for remote teams).
 - **Unix Time**: Convert between Unix timestamps and human-readable dates.
 - **Diff Checker**: Side-by-side text and code comparison.
+
+### 📂 Global Features
+- **File Toolkit**: Open, edit, copy, and download files directly within every tool (SQL, JSON, CSV).
+- **Smart Layouts**: Auto-resizing panes and dedicated toolbars for a clean workspace.
 
 ## 🛠️ Built With
 
@@ -49,7 +53,8 @@ This project relies on a robust stack of modern web technologies and specialized
 - **[DuckDB Wasm](https://duckdb.org/docs/api/wasm/overview)**: A high-performance analytical database running entirely in the browser (used for Parquet Viewer).
 - **[Monaco Editor](https://microsoft.github.io/monaco-editor/)**: The code editor that powers VS Code (used for SQL, JSON, and Diff editors).
 - **[dnd-kit](https://dndkit.com/)**: Lightweight, performant, accessible drag-and-drop toolkit (used for Time Converter).
-- **[Mermaid](https://mermaid.js.org/)**: Diagramming and charting tool (used for SQL Lineage).
+- **[React Flow](https://reactflow.dev/)**: Highly customizable library for building interactive node-based UIs (used for SQL Lineage).
+- **[Dagre](https://github.com/dagrejs/dagre)**: Directed graph layout engine (used for auto-aligning Lineage graphs).
 - **[node-sql-parser](https://github.com/taozhi8833998/node-sql-parser)** & **[sql-formatter](https://github.com/sql-formatter-org/sql-formatter)**: Parsing and formatting SQL queries.
 - **[date-fns](https://date-fns.org/)**: Modern JavaScript date utility library (used for time calculations).
 

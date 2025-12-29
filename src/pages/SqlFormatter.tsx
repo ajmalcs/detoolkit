@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { format } from 'sql-formatter'
 import { Parser } from 'node-sql-parser'
-import { Copy, RotateCcw, AlertTriangle, CheckCircle2, ShieldAlert } from 'lucide-react'
+import { RotateCcw, AlertTriangle, CheckCircle2, ShieldAlert } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { Card } from '../components/ui/card'
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '../components/ui/resizable'
@@ -121,10 +121,6 @@ export default function SqlFormatter() {
         }, 10)
     }
 
-    const handleCopy = () => {
-        navigator.clipboard.writeText(output)
-    }
-
     const handleClear = () => {
         setInput('')
         setOutput('')
@@ -183,13 +179,13 @@ export default function SqlFormatter() {
                                         <AlertTriangle className="h-3 w-3" /> Invalid Syntax
                                     </span>
                                 )}
-                                <label className="text-sm font-medium text-muted-foreground bg-background/80 px-2 rounded">Raw SQL</label>
                             </div>
                             <div className="flex-1 w-full relative min-h-0">
                                 <CodeEditor
                                     value={input}
                                     onChange={(val) => setInput(val || '')}
                                     language="sql"
+                                    fileName="Raw SQL"
                                 />
                             </div>
                         </Card>
@@ -199,7 +195,6 @@ export default function SqlFormatter() {
 
                     <ResizablePanel defaultSize={50} minSize={20}>
                         <Card className="flex flex-col h-full bg-card overflow-hidden relative rounded-none border-0">
-                            <label className="text-sm font-medium text-muted-foreground absolute top-2 right-16 z-10 bg-background/80 px-2 rounded">Formatted</label>
                             {error ? (
                                 <div className="text-destructive p-4 border border-destructive rounded-md bg-destructive/10 m-4 flex flex-col items-start gap-4">
                                     <div className="flex items-center gap-2 font-medium">
@@ -211,21 +206,12 @@ export default function SqlFormatter() {
                                     </p>
                                 </div>
                             ) : (
-                                <div className="flex-1 overflow-hidden relative">
-                                    {output && (
-                                        <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            className="absolute top-2 right-2 z-20 text-muted-foreground hover:text-foreground"
-                                            onClick={handleCopy}
-                                        >
-                                            <Copy className="h-4 w-4" />
-                                        </Button>
-                                    )}
+                                <div className="flex-1 overflow-hidden relative h-full">
                                     <CodeEditor
                                         value={output}
                                         language="sql"
                                         readOnly={true}
+                                        fileName="Formatted SQL"
                                     />
                                 </div>
                             )}

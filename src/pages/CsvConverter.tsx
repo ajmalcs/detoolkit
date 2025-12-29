@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Copy, Eraser, ArrowRight } from 'lucide-react'
+import { Eraser, ArrowRight } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { Card } from '../components/ui/card'
 import { CodeEditor } from '../components/ui/code-editor'
@@ -43,12 +43,6 @@ export default function CsvConverter() {
         }
     }
 
-    const handleCopy = () => {
-        if (output) {
-            navigator.clipboard.writeText(output)
-        }
-    }
-
     const handleClear = () => {
         setInput('')
         setOutput('')
@@ -73,13 +67,12 @@ export default function CsvConverter() {
                 <ResizablePanelGroup direction="horizontal" className="flex-1 h-full min-h-0 rounded-lg border">
                     <ResizablePanel defaultSize={50} minSize={20}>
                         <Card className="flex flex-col h-full rounded-none border-0 relative">
-                            <label className="text-sm font-medium text-muted-foreground absolute top-2 right-4 z-10 bg-background/80 px-2 rounded">CSV Input</label>
-                            <label className="text-sm font-medium text-muted-foreground absolute top-2 right-4 z-10 bg-background/80 px-2 rounded">CSV Input</label>
                             <div className="flex-1 w-full relative min-h-0">
                                 <CodeEditor
                                     value={input}
                                     onChange={(val) => setInput(val || '')}
                                     language="markdown" // CSV highlighting is basic in Monaco, markdown is okay or plain text
+                                    fileName="CSV Input"
                                 />
                             </div>
                         </Card>
@@ -89,28 +82,18 @@ export default function CsvConverter() {
 
                     <ResizablePanel defaultSize={50} minSize={20}>
                         <Card className="flex flex-col h-full bg-card overflow-hidden relative rounded-none border-0">
-                            <label className="text-sm font-medium text-muted-foreground absolute top-2 right-16 z-10 bg-background/80 px-2 rounded">JSON Output</label>
                             {error ? (
                                 <div className="text-destructive p-4 border border-destructive rounded-md bg-destructive/10 m-4">
                                     {error}
                                 </div>
                             ) : (
-                                <div className="flex-1 overflow-hidden relative">
-                                    {output && (
-                                        <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            className="absolute top-2 right-2 z-20 text-muted-foreground hover:text-foreground"
-                                            onClick={handleCopy}
-                                        >
-                                            <Copy className="h-4 w-4" />
-                                        </Button>
-                                    )}
-                                    <div className="flex-1 w-full relative min-h-0">
+                                <div className="flex-1 overflow-hidden relative h-full">
+                                    <div className="flex-1 w-full h-full relative min-h-0">
                                         <CodeEditor
                                             value={output}
                                             language="json"
                                             readOnly={true}
+                                            fileName="JSON Output"
                                         />
                                     </div>
                                 </div>

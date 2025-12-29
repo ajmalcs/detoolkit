@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Copy, Eraser, Play, Table as TableIcon, Code } from 'lucide-react'
+import { Eraser, Play, Table as TableIcon, Code } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { Card } from '../components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
@@ -53,12 +53,6 @@ export default function JsonUtils() {
         }, 10)
     }
 
-    const handleCopy = () => {
-        if (formatted) {
-            navigator.clipboard.writeText(formatted)
-        }
-    }
-
     const handleClear = () => {
         setInput('')
         setFormatted('')
@@ -86,13 +80,12 @@ export default function JsonUtils() {
                 <ResizablePanelGroup direction="horizontal" className="flex-1 h-full min-h-0 rounded-lg border">
                     <ResizablePanel defaultSize={50} minSize={20}>
                         <Card className="flex flex-col h-full rounded-none border-0 relative">
-                            <label className="text-sm font-medium text-muted-foreground absolute top-2 right-4 z-10 bg-background/80 px-2 rounded">Input JSON</label>
-                            <label className="text-sm font-medium text-muted-foreground absolute top-2 right-4 z-10 bg-background/80 px-2 rounded">Input JSON</label>
                             <div className="flex-1 w-full relative min-h-0">
                                 <CodeEditor
                                     value={input}
                                     onChange={(val) => setInput(val || '')}
                                     language="json"
+                                    fileName="Input JSON"
                                 />
                             </div>
                         </Card>
@@ -119,20 +112,12 @@ export default function JsonUtils() {
                                         </div>
                                     ) : (
                                         <div className="h-full flex flex-col relative overflow-hidden">
-                                            <Button
-                                                size="sm"
-                                                variant="ghost"
-                                                className="absolute top-2 right-4 z-20 text-muted-foreground hover:text-foreground"
-                                                onClick={handleCopy}
-                                                disabled={!formatted}
-                                            >
-                                                <Copy className="h-4 w-4" />
-                                            </Button>
                                             <div className="flex-1 w-full relative min-h-0">
                                                 <CodeEditor
                                                     value={formatted}
                                                     language="json"
                                                     readOnly={true}
+                                                    fileName="Prettified JSON"
                                                 />
                                             </div>
                                         </div>

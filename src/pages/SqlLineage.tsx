@@ -1,5 +1,17 @@
 import { useState, useCallback, useEffect } from 'react'
-import mermaid from 'mermaid'
+import ReactFlow, {
+    Background,
+    Controls,
+    MiniMap,
+    useNodesState,
+    useEdgesState,
+    MarkerType,
+    type Node,
+    type Edge,
+    Position
+} from 'reactflow'
+import 'reactflow/dist/style.css'
+import dagre from 'dagre'
 import { Parser } from 'node-sql-parser'
 import { Play, Database, Network, Filter } from 'lucide-react'
 import { Button } from '../components/ui/button'
@@ -9,11 +21,59 @@ import { CodeEditor } from '../components/ui/code-editor'
 
 const parser = new Parser()
 
-mermaid.initialize({
-    startOnLoad: true,
-    theme: 'base',
-    securityLevel: 'loose',
-})
+// Helper to handle potential ESM/CJS interop issues with dagre
+const getDagre = () => {
+    // @ts-ignore
+    const d = dagre.default || dagre
+    return d
+}
+
+// Initialize graph once (or lazily) - doing it at module level is risky if dagre is undefined initially? 
+// But imports should be resolved.
+// We will instantiate inside the layout function to be safe and clean.
+
+const nodeWidth = 180
+const nodeHeight = 50
+
+const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'LR') => {
+    const d = getDagre()
+    const dagreGraph = new d.graphlib.Graph()
+    dagreGraph.setDefaultEdgeLabel(() => ({}))
+
+    const isHorizontal = direction === 'LR'
+    dagreGraph.setGraph({
+        rankdir: direction,
+        ranksep: 150,  // Increased from default (approx 50)
+        nodesep: 80    // Increased from default
+    })
+
+    nodes.forEach((node) => {
+        dagreGraph.setNode(node.id, { width: nodeWidth, height: nodeHeight })
+    })
+
+    edges.forEach((edge) => {
+        dagreGraph.setEdge(edge.source, edge.target)
+    })
+
+    d.layout(dagreGraph)
+
+    nodes.forEach((node) => {
+        const nodeWithPosition = dagreGraph.node(node.id)
+        node.targetPosition = isHorizontal ? Position.Left : Position.Top
+        node.sourcePosition = isHorizontal ? Position.Right : Position.Bottom
+
+        // We are shifting the dagre node position (anchor=center center) to the top left
+        // so it matches the React Flow node anchor point (top left).
+        node.position = {
+            x: nodeWithPosition.x - nodeWidth / 2,
+            y: nodeWithPosition.y - nodeHeight / 2,
+        }
+
+        return node
+    })
+
+    return { nodes, edges }
+}
 
 export default function SqlLineage() {
     const [input, setInput] = useState(`SELECT u.username, o.order_id, p.product_name
@@ -23,8 +83,12 @@ JOIN order_items oi ON o.id = oi.order_id
 JOIN products p ON oi.product_id = p.id
 WHERE o.status = 'completed' AND o.total > 100`)
     const [dialect, setDialect] = useState('transactsql')
-    const [svg, setSvg] = useState('')
     const [error, setError] = useState('')
+
+    // React Flow State
+    const [nodes, setNodes, onNodesChange] = useNodesState([])
+    const [edges, setEdges, onEdgesChange] = useEdgesState([])
+    const [rfInstance, setRfInstance] = useState<any>(null)
 
     // Detailed stats
     const [stats, setStats] = useState({
@@ -42,7 +106,7 @@ WHERE o.status = 'completed' AND o.total > 100`)
 
     const [activeTab, setActiveTab] = useState<'graph' | 'details'>('graph')
 
-    // Helper to stringify AST expressions (Naive implementation)
+    // Helper to stringify AST expressions
     const exprToString = (expr: any): string => {
         if (!expr) return ''
 
@@ -61,6 +125,17 @@ WHERE o.status = 'completed' AND o.total > 100`)
         if (expr.type === 'bool') {
             return expr.value ? 'TRUE' : 'FALSE'
         }
+        if (expr.type === 'null') {
+            return 'NULL'
+        }
+        if (expr.type === 'expr_list') {
+            return `(${expr.value.map((e: any) => exprToString(e)).join(', ')})`
+        }
+        if (expr.type === 'function') {
+            const funcName = expr.name.name.map((n: any) => n.value).join('.')
+            const args = expr.args ? exprToString(expr.args) : '()'
+            return `${funcName}${args}`
+        }
         // Fallback for complex things not covered
         return '?'
     }
@@ -71,8 +146,8 @@ WHERE o.status = 'completed' AND o.total > 100`)
             const ast = parser.astify(input, { database: dialect as any })
             const statements = Array.isArray(ast) ? ast : [ast]
 
-            const nodes = new Set<string>()
-            const edges: { from: string, to: string, label: string }[] = []
+            const rawNodes = new Set<string>()
+            const rawEdges: { from: string, to: string, label: string }[] = []
 
             const foundDetails = {
                 tables: [] as { name: string, alias: string, isParent: boolean }[],
@@ -88,7 +163,7 @@ WHERE o.status = 'completed' AND o.total > 100`)
                             const name = f.table
                             const alias = f.as
                             const id = alias || name
-                            if (id) nodes.add(id)
+                            if (id) rawNodes.add(id)
 
                             foundDetails.tables.push({
                                 name: name,
@@ -115,7 +190,7 @@ WHERE o.status = 'completed' AND o.total > 100`)
                                 onCondition = conditionStr
                             }
 
-                            edges.push({ from: fromId, to: toId, label })
+                            rawEdges.push({ from: fromId, to: toId, label })
                             foundDetails.joins.push({ from: fromId, to: toId, on: onCondition })
                         }
                     }
@@ -124,14 +199,11 @@ WHERE o.status = 'completed' AND o.total > 100`)
                     if (stmt.where) {
                         const extractFilters = (expr: any) => {
                             if (!expr) return
-
                             if (expr.type === 'binary_expr') {
-                                // Check if it's a logical operator to recurse
                                 if (['AND', 'OR'].includes(expr.operator)) {
                                     if (expr.left) extractFilters(expr.left)
                                     if (expr.right) extractFilters(expr.right)
                                 } else {
-                                    // It's a condition, stringify it
                                     foundDetails.filters.push(exprToString(expr))
                                 }
                             }
@@ -141,27 +213,56 @@ WHERE o.status = 'completed' AND o.total > 100`)
                 }
             })
 
-            if (nodes.size === 0) {
-                setSvg('')
+            if (rawNodes.size === 0) {
+                setNodes([])
+                setEdges([])
                 return
             }
 
-            // Build Mermaid String
-            let graphDefinition = 'graph LR\n'
+            // Transform to React Flow Nodes/Edges
+            const newNodes: Node[] = Array.from(rawNodes).map((nodeId) => ({
+                id: nodeId,
+                data: { label: nodeId },
+                position: { x: 0, y: 0 }, // Initial position, will be computed by dagre
+                style: {
+                    backgroundColor: '#1e293b',
+                    color: '#fff',
+                    border: '1px solid #94a3b8',
+                    borderRadius: '8px',
+                    padding: '10px',
+                    width: nodeWidth,
+                    fontSize: '12px',
+                    fontWeight: 'bold',
+                    textAlign: 'center',
+                }
+            }))
 
-            nodes.forEach(n => {
-                graphDefinition += `    ${n}[${n}]\n`
-            })
+            const newEdges: Edge[] = rawEdges.map((e, idx) => ({
+                id: `e${idx}`,
+                source: e.from,
+                target: e.to,
+                label: e.label !== 'related' ? e.label : undefined,
+                type: 'smoothstep',
+                animated: true,
+                style: { stroke: '#94a3b8' },
+                labelStyle: { fill: '#64748b', fontWeight: 700 }, // Slate-500
+                labelBgStyle: { fill: '#f1f5f9' }, // Slate-100
+                markerEnd: {
+                    type: MarkerType.ArrowClosed,
+                    color: '#94a3b8',
+                },
+            }))
 
-            edges.forEach(e => {
-                const cleanLabel = e.label.replace(/["\n]/g, '')
-                graphDefinition += `    ${e.from} -->|${cleanLabel}| ${e.to}\n`
-            })
+            const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(newNodes, newEdges)
+            setNodes(layoutedNodes)
+            setEdges(layoutedEdges)
 
-            graphDefinition += '    classDef default fill:#1e293b,stroke:#94a3b8,color:#fff;\n'
-
-            const { svg } = await mermaid.render('mermaid-chart', graphDefinition)
-            setSvg(svg)
+            // Auto-fit view nicely
+            setTimeout(() => {
+                if (rfInstance) {
+                    rfInstance.fitView({ padding: 0.2 })
+                }
+            }, 50)
 
             setDetails(foundDetails)
             setStats({
@@ -174,7 +275,7 @@ WHERE o.status = 'completed' AND o.total > 100`)
             console.error("Parse Error", e)
             setError(e.message || 'Error parsing SQL')
         }
-    }, [input, dialect])
+    }, [input, dialect, setNodes, setEdges, rfInstance])
 
     useEffect(() => {
         analyze()
@@ -182,7 +283,8 @@ WHERE o.status = 'completed' AND o.total > 100`)
 
     const handleClear = () => {
         setInput('')
-        setSvg('')
+        setNodes([])
+        setEdges([])
         setStats({ tables: 0, joins: 0, filters: 0 })
         setDetails({ tables: [], joins: [], filters: [] })
     }
@@ -251,83 +353,95 @@ WHERE o.status = 'completed' AND o.total > 100`)
                                 </button>
                             </div>
 
-                            <div className="flex-1 overflow-auto p-4">
+                            <div className="flex-1 overflow-hidden relative">
                                 {activeTab === 'graph' ? (
                                     error ? (
-                                        <div className="text-red-500">{error}</div>
+                                        <div className="p-4 text-red-500">{error}</div>
                                     ) : (
-                                        <div
-                                            className="w-full h-full flex items-center justify-center mermaid-container"
-                                            dangerouslySetInnerHTML={{ __html: svg }}
-                                        />
+                                        <div className="w-full h-full">
+                                            <ReactFlow
+                                                nodes={nodes}
+                                                edges={edges}
+                                                onNodesChange={onNodesChange}
+                                                onEdgesChange={onEdgesChange}
+                                                onInit={setRfInstance}
+                                                fitView
+                                            >
+                                                <Background />
+                                                <Controls />
+                                                <MiniMap />
+                                            </ReactFlow>
+                                        </div>
                                     )
                                 ) : (
-                                    <div className="space-y-6 max-w-3xl mx-auto">
-                                        <div>
-                                            <h3 className="font-semibold mb-2 flex items-center gap-2"><Database className="h-4 w-4" /> Tables Found</h3>
-                                            <div className="border rounded-md bg-background">
-                                                <table className="w-full text-sm">
-                                                    <thead className="bg-muted/50 text-left">
-                                                        <tr>
-                                                            <th className="p-2 font-medium">Table Name</th>
-                                                            <th className="p-2 font-medium">Alias</th>
-                                                            <th className="p-2 font-medium">Type</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        {details.tables.map((t, i) => (
-                                                            <tr key={i} className={`border-t ${t.isParent ? 'bg-primary/5 dark:bg-primary/10' : ''}`}>
-                                                                <td className="p-2 font-mono">
-                                                                    {t.name}
-                                                                    {t.isParent && <span className="ml-2 text-[10px] bg-primary text-primary-foreground px-1.5 py-0.5 rounded-full uppercase tracking-wider font-bold">Parent</span>}
-                                                                </td>
-                                                                <td className="p-2 font-mono text-muted-foreground">{t.alias}</td>
-                                                                <td className="p-2 text-xs text-muted-foreground">{t.isParent ? 'Main Table' : 'Joined'}</td>
+                                    <div className="overflow-auto h-full p-4">
+                                        <div className="space-y-6 max-w-3xl mx-auto">
+                                            <div>
+                                                <h3 className="font-semibold mb-2 flex items-center gap-2"><Database className="h-4 w-4" /> Tables Found</h3>
+                                                <div className="border rounded-md bg-background">
+                                                    <table className="w-full text-sm">
+                                                        <thead className="bg-muted/50 text-left">
+                                                            <tr>
+                                                                <th className="p-2 font-medium">Table Name</th>
+                                                                <th className="p-2 font-medium">Alias</th>
+                                                                <th className="p-2 font-medium">Type</th>
                                                             </tr>
-                                                        ))}
-                                                        {details.tables.length === 0 && <tr><td colSpan={3} className="p-4 text-center text-muted-foreground">No tables found</td></tr>}
-                                                    </tbody>
-                                                </table>
+                                                        </thead>
+                                                        <tbody>
+                                                            {details.tables.map((t, i) => (
+                                                                <tr key={i} className={`border-t ${t.isParent ? 'bg-primary/5 dark:bg-primary/10' : ''}`}>
+                                                                    <td className="p-2 font-mono">
+                                                                        {t.name}
+                                                                        {t.isParent && <span className="ml-2 text-[10px] bg-primary text-primary-foreground px-1.5 py-0.5 rounded-full uppercase tracking-wider font-bold">Parent</span>}
+                                                                    </td>
+                                                                    <td className="p-2 font-mono text-muted-foreground">{t.alias}</td>
+                                                                    <td className="p-2 text-xs text-muted-foreground">{t.isParent ? 'Main Table' : 'Joined'}</td>
+                                                                </tr>
+                                                            ))}
+                                                            {details.tables.length === 0 && <tr><td colSpan={3} className="p-4 text-center text-muted-foreground">No tables found</td></tr>}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
                                             </div>
-                                        </div>
 
-                                        <div>
-                                            <h3 className="font-semibold mb-2 flex items-center gap-2"><Network className="h-4 w-4" /> Join Conditions</h3>
-                                            <div className="border rounded-md bg-background">
-                                                <table className="w-full text-sm">
-                                                    <thead className="bg-muted/50 text-left">
-                                                        <tr>
-                                                            <th className="p-2 font-medium">From</th>
-                                                            <th className="p-2 font-medium">To</th>
-                                                            <th className="p-2 font-medium">Condition</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        {details.joins.map((j, i) => (
-                                                            <tr key={i} className="border-t">
-                                                                <td className="p-2 font-mono">{j.from}</td>
-                                                                <td className="p-2 font-mono">{j.to}</td>
-                                                                <td className="p-2 font-mono text-muted-foreground text-xs font-semibold">{j.on}</td>
+                                            <div>
+                                                <h3 className="font-semibold mb-2 flex items-center gap-2"><Network className="h-4 w-4" /> Join Conditions</h3>
+                                                <div className="border rounded-md bg-background">
+                                                    <table className="w-full text-sm">
+                                                        <thead className="bg-muted/50 text-left">
+                                                            <tr>
+                                                                <th className="p-2 font-medium">From</th>
+                                                                <th className="p-2 font-medium">To</th>
+                                                                <th className="p-2 font-medium">Condition</th>
                                                             </tr>
-                                                        ))}
-                                                        {details.joins.length === 0 && <tr><td colSpan={3} className="p-4 text-center text-muted-foreground">No joins found</td></tr>}
-                                                    </tbody>
-                                                </table>
+                                                        </thead>
+                                                        <tbody>
+                                                            {details.joins.map((j, i) => (
+                                                                <tr key={i} className="border-t">
+                                                                    <td className="p-2 font-mono">{j.from}</td>
+                                                                    <td className="p-2 font-mono">{j.to}</td>
+                                                                    <td className="p-2 font-mono text-muted-foreground text-xs font-semibold">{j.on}</td>
+                                                                </tr>
+                                                            ))}
+                                                            {details.joins.length === 0 && <tr><td colSpan={3} className="p-4 text-center text-muted-foreground">No joins found</td></tr>}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
                                             </div>
-                                        </div>
 
-                                        <div>
-                                            <h3 className="font-semibold mb-2 flex items-center gap-2"><Filter className="h-4 w-4" /> Filters (WHERE)</h3>
-                                            <div className="border rounded-md bg-background p-2">
-                                                {details.filters.length > 0 ? (
-                                                    <ul className="list-disc list-inside space-y-1">
-                                                        {details.filters.map((f, i) => (
-                                                            <li key={i} className="text-sm font-mono text-muted-foreground">{f}</li>
-                                                        ))}
-                                                    </ul>
-                                                ) : (
-                                                    <p className="text-sm text-muted-foreground p-2">No active filters found.</p>
-                                                )}
+                                            <div>
+                                                <h3 className="font-semibold mb-2 flex items-center gap-2"><Filter className="h-4 w-4" /> Filters (WHERE)</h3>
+                                                <div className="border rounded-md bg-background p-2">
+                                                    {details.filters.length > 0 ? (
+                                                        <ul className="list-disc list-inside space-y-1">
+                                                            {details.filters.map((f, i) => (
+                                                                <li key={i} className="text-sm font-mono text-muted-foreground">{f}</li>
+                                                            ))}
+                                                        </ul>
+                                                    ) : (
+                                                        <p className="text-sm text-muted-foreground p-2">No active filters found.</p>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>

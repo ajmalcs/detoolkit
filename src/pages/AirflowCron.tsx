@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Copy } from 'lucide-react'
+import { Copy, Minimize2, Maximize2, Download } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { Card } from '../components/ui/card'
 import { CodeEditor } from '../components/ui/code-editor'
@@ -77,11 +77,39 @@ with DAG(
         navigator.clipboard.writeText(dagCode)
     }
 
+    const [isFullScreen, setIsFullScreen] = useState(false)
+
+    const handleDownload = () => {
+        const text = `# Airflow DAG: ${dagId}\n# Schedule: ${output} (${description})\n\n${dagCode}`
+        const blob = new Blob([text], { type: 'text/python' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `${dagId}.py`
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+    }
+
     return (
-        <div className="h-full flex flex-col p-4 gap-4 max-w-7xl mx-auto w-full">
+        <div className={`flex-1 flex flex-col p-4 gap-4 w-full h-full transition-all duration-300 ${isFullScreen ? 'fixed inset-0 z-50 bg-background' : 'max-w-7xl mx-auto'}`}>
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                     <h1 className="text-2xl font-bold tracking-tight">Airflow Cron Generator</h1>
+                </div>
+                <div className="flex items-center gap-2">
+                    <Button variant="outline" size="icon" onClick={handleDownload} title="Download DAG">
+                        <Download className="h-4 w-4" />
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setIsFullScreen(!isFullScreen)}
+                        title={isFullScreen ? "Exit Full Screen" : "Full Screen"}
+                    >
+                        {isFullScreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                    </Button>
                 </div>
             </div>
 

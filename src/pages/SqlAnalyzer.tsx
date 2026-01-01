@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react'
 import { Parser } from 'node-sql-parser'
-import { AlertTriangle, Info, AlertCircle, Play, ShieldCheck } from 'lucide-react'
+import { AlertTriangle, Info, AlertCircle, Play, ShieldCheck, Minimize2, Maximize2, Download } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { Card } from '../components/ui/card'
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '../components/ui/resizable'
@@ -22,13 +22,26 @@ export default function SqlAnalyzer() {
     const [results, setResults] = useState<AnalysisResult[]>([])
     const [analyzing, setAnalyzing] = useState(false)
 
+    // Map our dialects to node-sql-parser supported dialects
+    const getParserDialect = (d: string): string => {
+        const dialectMap: Record<string, string> = {
+            'transactsql': 'transactsql',
+            'tsql': 'transactsql',
+            'postgresql': 'postgresql',
+            'mysql': 'mysql',
+            'bigquery': 'bigquery',
+            'sql': 'mysql' // Default fallback
+        }
+        return dialectMap[d] || 'mysql'
+    }
+
     const analyze = useCallback(() => {
         setAnalyzing(true)
         const findings: AnalysisResult[] = []
 
         try {
-            // 1. Basic AST generation
-            const ast = parser.astify(input, { database: dialect as any })
+            // 1. Basic AST generation with validated dialect
+            const ast = parser.astify(input, { database: getParserDialect(dialect) as any })
             const statements = Array.isArray(ast) ? ast : [ast]
 
             statements.forEach((stmt: any) => {
@@ -115,8 +128,24 @@ export default function SqlAnalyzer() {
         analyze()
     }, [])
 
+    const [isFullScreen, setIsFullScreen] = useState(false)
+
+    const handleDownload = () => {
+        if (!results.length) return
+        const report = results.map(r => `[${r.type.toUpperCase()}] ${r.message}\nRecommendation: ${r.recommendation}`).join('\n\n')
+        const blob = new Blob([report], { type: 'text/plain' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = 'sql_analysis_report.txt'
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+    }
+
     return (
-        <div className="flex-1 flex flex-col p-4 gap-4 max-w-7xl mx-auto w-full h-full">
+        <div className={`flex-1 flex flex-col p-4 gap-4 w-full h-full transition-all duration-300 ${isFullScreen ? 'fixed inset-0 z-50 bg-background' : 'max-w-7xl mx-auto'}`}>
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                     <h1 className="text-2xl font-bold tracking-tight">SQL Performance Analyzer</h1>
@@ -135,6 +164,17 @@ export default function SqlAnalyzer() {
                 <div className="flex items-center gap-2">
                     <Button variant="outline" onClick={handleClear} disabled={!input}>
                         Clear
+                    </Button>
+                    <Button variant="outline" size="icon" onClick={handleDownload} disabled={results.length === 0} title="Download Report">
+                        <Download className="h-4 w-4" />
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setIsFullScreen(!isFullScreen)}
+                        title={isFullScreen ? "Exit Full Screen" : "Full Screen"}
+                    >
+                        {isFullScreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
                     </Button>
                     <Button onClick={analyze} disabled={analyzing}>
                         <Play className="mr-2 h-4 w-4" />

@@ -9,10 +9,17 @@ import TimeConverter from './pages/TimeConverter'
 import ParquetViewer from './pages/ParquetViewer'
 import JdbcBuilder from './pages/JdbcBuilder'
 import AirflowCron from './pages/AirflowCron'
-import ArnParser from './pages/ArnParser'
 import SqlAnalyzer from './pages/SqlAnalyzer'
 import SqlLineage from './pages/SqlLineage'
 import TeamTimeGrid from './pages/TeamTimeGrid'
+import MockDataGenerator from './pages/MockDataGenerator'
+import DdlDesigner from './pages/DdlDesigner'
+import SqlCodeGenerator from './pages/SqlCodeGenerator'
+import DataTypeMapper from './pages/DataTypeMapper'
+import SynapseDdlHelper from './pages/SynapseDdlHelper'
+import AdfPipelineAnalyzer from './pages/AdfPipelineAnalyzer'
+import TriggerScheduleVisualizer from './pages/TriggerScheduleVisualizer'
+import PipelineRunAnalyzer from './pages/PipelineRunAnalyzer'
 
 function App() {
   return (
@@ -28,10 +35,17 @@ function App() {
           <Route path="parquet" element={<ParquetViewer />} />
           <Route path="jdbc" element={<JdbcBuilder />} />
           <Route path="cron" element={<AirflowCron />} />
-          <Route path="arn" element={<ArnParser />} />
           <Route path="sql-analyzer" element={<SqlAnalyzer />} />
           <Route path="sql-lineage" element={<SqlLineage />} />
           <Route path="team-time" element={<TeamTimeGrid />} />
+          <Route path="mock-data" element={<MockDataGenerator />} />
+          <Route path="ddl-designer" element={<DdlDesigner />} />
+          <Route path="sql-code-gen" element={<SqlCodeGenerator />} />
+          <Route path="data-type-mapper" element={<DataTypeMapper />} />
+          <Route path="synapse-ddl" element={<SynapseDdlHelper />} />
+          <Route path="adf-pipeline" element={<AdfPipelineAnalyzer />} />
+          <Route path="trigger-visualizer" element={<TriggerScheduleVisualizer />} />
+          <Route path="run-analyzer" element={<PipelineRunAnalyzer />} />
         </Route>
       </Routes>
     </HashRouter>

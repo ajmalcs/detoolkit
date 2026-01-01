@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { format, fromUnixTime, getUnixTime } from 'date-fns'
-import { Copy, Clock, RefreshCw } from 'lucide-react'
+import { Copy, Clock, RefreshCw, Minimize2, Maximize2, Download } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { Card } from '../components/ui/card'
 
@@ -41,9 +41,41 @@ export default function TimeConverter() {
         navigator.clipboard.writeText(text)
     }
 
+
+    const [isFullScreen, setIsFullScreen] = useState(false)
+
+    const handleDownload = () => {
+        if (!readableDate) return
+        const blob = new Blob([readableDate], { type: 'text/plain' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `timestamp_${timestamp}.txt`
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+    }
+
     return (
-        <div className="h-full flex flex-col p-6 gap-6 max-w-4xl mx-auto w-full">
-            <h1 className="text-2xl font-bold">Unix Time Converter</h1>
+        <div className={`h-full flex flex-col p-6 gap-6 w-full transition-all duration-300 ${isFullScreen ? 'fixed inset-0 z-50 bg-background overflow-auto' : 'max-w-4xl mx-auto'}`}>
+            <div className="flex items-center justify-between">
+                <h1 className="text-2xl font-bold">Unix Time Converter</h1>
+                <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="icon" onClick={handleDownload} disabled={!readableDate} title="Download Result">
+                        <Download className="h-4 w-4" />
+                    </Button>
+                    <div className="w-px h-6 bg-border mx-1" />
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setIsFullScreen(!isFullScreen)}
+                        title={isFullScreen ? "Exit Full Screen" : "Full Screen"}
+                    >
+                        {isFullScreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                    </Button>
+                </div>
+            </div>
 
             {/* Current Time Card */}
             <Card className="p-6 bg-accent/20">

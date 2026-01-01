@@ -4,7 +4,7 @@ import duckdb_wasm from '@duckdb/duckdb-wasm/dist/duckdb-mvp.wasm?url'
 import mvp_worker from '@duckdb/duckdb-wasm/dist/duckdb-browser-mvp.worker.js?url'
 import duckdb_eh from '@duckdb/duckdb-wasm/dist/duckdb-eh.wasm?url'
 import eh_worker from '@duckdb/duckdb-wasm/dist/duckdb-browser-eh.worker.js?url'
-import { FileDown, Database, Play } from 'lucide-react'
+import { FileDown, Database, Play, Minimize2, Maximize2, Download } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { Card } from '../components/ui/card'
 import { CodeEditor } from '../components/ui/code-editor'
@@ -130,8 +130,34 @@ export default function ParquetViewer() {
         }
     }
 
+    const [isFullScreen, setIsFullScreen] = useState(false)
+
+    const handleDownload = () => {
+        if (!result || result.length === 0) return
+
+        // CSV export
+        const headers = columns.join(',')
+        const rows = result.map(row => columns.map(c => {
+            const val = row[c]
+            if (val === null || val === undefined) return ''
+            const str = String(val)
+            return str.includes(',') || str.includes('\n') ? `"${str.replace(/"/g, '""')}"` : str
+        }).join(','))
+
+        const csv = [headers, ...rows].join('\n')
+        const blob = new Blob([csv], { type: 'text/csv' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = 'query_result.csv'
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+    }
+
     return (
-        <div className="flex-1 flex flex-col p-4 gap-4 max-w-7xl mx-auto w-full h-full">
+        <div className={`flex-1 flex flex-col p-4 gap-4 w-full h-full transition-all duration-300 ${isFullScreen ? 'fixed inset-0 z-50 bg-background' : 'max-w-7xl mx-auto'}`}>
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                     <h1 className="text-2xl font-bold tracking-tight">Parquet Viewer</h1>
@@ -141,6 +167,18 @@ export default function ParquetViewer() {
                     </span>
                 </div>
                 <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={handleDownload} disabled={!result || result.length === 0} title="Download CSV">
+                        <Download className="h-4 w-4 mr-2" /> Download CSV
+                    </Button>
+                    <div className="w-px h-6 bg-border mx-1" />
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setIsFullScreen(!isFullScreen)}
+                        title={isFullScreen ? "Exit Full Screen" : "Full Screen"}
+                    >
+                        {isFullScreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                    </Button>
                     <Button onClick={runQuery} disabled={!conn || loading}>
                         <Play className="mr-2 h-4 w-4" /> Run Query
                     </Button>

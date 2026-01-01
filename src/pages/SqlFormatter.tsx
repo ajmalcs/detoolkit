@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { format } from 'sql-formatter'
 import { Parser } from 'node-sql-parser'
-import { RotateCcw, AlertTriangle, CheckCircle2, ShieldAlert } from 'lucide-react'
+import { RotateCcw, AlertTriangle, CheckCircle2, ShieldAlert, Minimize2, Maximize2, Download } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { Card } from '../components/ui/card'
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '../components/ui/resizable'
@@ -128,11 +128,26 @@ export default function SqlFormatter() {
         setValidationStatus(null)
     }
 
+    const [isFullScreen, setIsFullScreen] = useState(false)
+
+    const handleDownload = () => {
+        if (!output) return
+        const blob = new Blob([output], { type: 'text/plain' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = 'formatted.sql'
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+    }
+
     return (
-        <div className="flex-1 flex flex-col p-4 gap-4 max-w-7xl mx-auto w-full h-full">
+        <div className={`flex-1 flex flex-col p-4 gap-4 w-full h-full transition-all duration-300 ${isFullScreen ? 'fixed inset-0 z-50 bg-background' : 'max-w-7xl mx-auto'}`}>
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                    <h1 className="text-2xl font-bold tracking-tight">SQL Formatter</h1>
+                    <h1 className="text-2xl font-bold tracking-tight">SQL Formatter & Validator</h1>
                     <select
                         value={dialect}
                         onChange={(e) => setDialect(e.target.value)}
@@ -157,6 +172,18 @@ export default function SqlFormatter() {
                     <Button variant="outline" size="sm" onClick={handleClear}>
                         <RotateCcw className="mr-2 h-4 w-4" />
                         Clear
+                    </Button>
+                    <div className="w-px h-6 bg-border mx-1" />
+                    <Button variant="outline" size="icon" onClick={handleDownload} disabled={!output} title="Download Formatted SQL">
+                        <Download className="h-4 w-4" />
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setIsFullScreen(!isFullScreen)}
+                        title={isFullScreen ? "Exit Full Screen" : "Full Screen"}
+                    >
+                        {isFullScreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
                     </Button>
                     <Button onClick={handleFormat} disabled={loading}>
                         {loading ? 'Formatting...' : 'Format SQL'}

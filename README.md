@@ -14,25 +14,33 @@ Detoolkit is a comprehensive suite of utilities designed specifically for data e
 - **SQL Formatter**: Pretty-print and standardize your SQL queries.
 - **SQL Analyzer**: Static analysis to identify performance anti-patterns and improvement opportunities.
 - **SQL Lineage**: Visualize table relationships with an interactive, auto-layout graph.
+- **SQL Code Generator**: Build complex SQL queries visually with support for joins, filters, aggregations, and window functions.
+- **DDL Designer**: Interactive table designer to generate CREATE TABLE statements for multiple database platforms.
 - **JDBC Builder**: Quickly generate JDBC connection strings for various databases.
 
-### 📊 Data Formats
+### ☁️ Azure Data Engineering
+- **ADF Pipeline Analyzer**: Parse and analyze Azure Data Factory pipeline JSON with visual dependency graphs, metrics, best practices validation, and auto-generated documentation.
+- **Trigger Schedule Visualizer**: Visualize ADF trigger schedules on an interactive calendar to identify gaps, overlaps, and patterns.
+- **Pipeline Run Analyzer**: Analyze ADF pipeline run history to identify bottlenecks, failures, and performance trends.
+- **Synapse DDL Helper**: Generate optimized DDL for Azure Synapse Analytics with distribution, indexing, and partitioning strategies.
+- **Data Type Mapper**: Convert data types across platforms (SQL Server, Synapse, Spark, Parquet, PostgreSQL).
+
+### 📊 Data Formats & Utilities
 - **JSON Utilities**: Validate, format, and convert JSON data.
 - **CSV to JSON**: Convert CSV data into JSON array format instantly.
 - **Parquet Viewer**: Query and inspect Parquet files directly in the browser using DuckDB.
-
-### ☁️ Cloud & Infrastructure
-- **ARN Parser**: Parse and inspect AWS Resource Names (ARNs) to extract partition, region, account, and resource details.
-- **Airflow Cron**: Generate and validate cron schedules for Apache Airflow DAGs.
+- **Mock Data Generator**: Generate realistic test data for databases and APIs with customizable schemas.
 
 ### ⏱️ Time & Productivity
 - **Time Conversion**: Compare overlapping working hours across different timezones (useful for remote teams).
-- **Unix Time**: Convert between Unix timestamps and human-readable dates.
+- **Team Time Grid**: Visualize team availability across multiple timezones with a grid view.
+- **Airflow Cron**: Generate and validate cron schedules for Apache Airflow DAGs.
 - **Diff Checker**: Side-by-side text and code comparison.
 
 ### 📂 Global Features
 - **File Toolkit**: Open, edit, copy, and download files directly within every tool (SQL, JSON, CSV).
 - **Smart Layouts**: Auto-resizing panes and dedicated toolbars for a clean workspace.
+- **Command Palette**: Quick navigation with ⌘K (Mac) or Ctrl+K (Windows/Linux).
 
 ## 🛠️ Built With
 

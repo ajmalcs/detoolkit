@@ -6,7 +6,7 @@ import { Card } from '../components/ui/card'
 import { Button } from '../components/ui/button'
 import { Calendar } from '../components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover'
-import { X, Plus, Clock, Calendar as CalendarIcon, GripVertical } from 'lucide-react'
+import { X, Plus, Clock, Calendar as CalendarIcon, GripVertical, Minimize2, Maximize2, Download } from 'lucide-react'
 import { cn } from '../lib/utils'
 import {
     DndContext,
@@ -112,8 +112,27 @@ export default function TeamTimeGrid() {
         addDays(today, 5),
     ]
 
+    const [isFullScreen, setIsFullScreen] = useState(false)
+
+    const handleDownload = () => {
+        const text = selectedZones.map(zone => {
+            const time = formatInTimeZone(new Date(), zone, 'yyyy-MM-dd HH:mm:ss zzzz')
+            return `${zone}: ${time}`
+        }).join('\n')
+
+        const blob = new Blob([text], { type: 'text/plain' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = 'team_times.txt'
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+    }
+
     return (
-        <div className="flex-1 flex flex-col p-6 gap-6 max-w-7xl mx-auto w-full h-full text-foreground">
+        <div className={`flex-1 flex flex-col p-6 gap-6 w-full h-full transition-all duration-300 ${isFullScreen ? 'fixed inset-0 z-50 bg-background overflow-auto' : 'max-w-7xl mx-auto'}`}>
             {/* Header */}
             <div className="flex items-start justify-between">
                 <div className="flex flex-col gap-2">
@@ -124,19 +143,33 @@ export default function TeamTimeGrid() {
                         Compare overlapping hours across timezones. Green cells indicate standard working hours (8 AM - 5 PM).
                     </p>
                 </div>
-                <div className="flex items-center bg-muted/50 p-1 rounded-lg border">
-                    <button
-                        onClick={() => setIs24Hour(false)}
-                        className={cn("px-3 py-1 rounded-md text-sm font-medium transition-all", !is24Hour ? "bg-background shadow text-foreground" : "text-muted-foreground hover:text-foreground")}
+                <div className="flex items-center gap-2">
+                    <div className="flex items-center bg-muted/50 p-1 rounded-lg border">
+                        <button
+                            onClick={() => setIs24Hour(false)}
+                            className={cn("px-3 py-1 rounded-md text-sm font-medium transition-all", !is24Hour ? "bg-background shadow text-foreground" : "text-muted-foreground hover:text-foreground")}
+                        >
+                            12h
+                        </button>
+                        <button
+                            onClick={() => setIs24Hour(true)}
+                            className={cn("px-3 py-1 rounded-md text-sm font-medium transition-all", is24Hour ? "bg-background shadow text-foreground" : "text-muted-foreground hover:text-foreground")}
+                        >
+                            24h
+                        </button>
+                    </div>
+                    <div className="w-px h-6 bg-border mx-1" />
+                    <Button variant="ghost" size="icon" onClick={handleDownload} title="Download Summary">
+                        <Download className="h-4 w-4" />
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setIsFullScreen(!isFullScreen)}
+                        title={isFullScreen ? "Exit Full Screen" : "Full Screen"}
                     >
-                        12h
-                    </button>
-                    <button
-                        onClick={() => setIs24Hour(true)}
-                        className={cn("px-3 py-1 rounded-md text-sm font-medium transition-all", is24Hour ? "bg-background shadow text-foreground" : "text-muted-foreground hover:text-foreground")}
-                    >
-                        24h
-                    </button>
+                        {isFullScreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                    </Button>
                 </div>
             </div>
 

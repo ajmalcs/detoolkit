@@ -1,21 +1,39 @@
 import { useEffect, useState } from "react"
 import { Command } from "cmdk"
-import { Search, FileCode, Braces, GitCompare, FileJson, Clock, Database } from "lucide-react"
+import { Search, FileCode, Braces, GitCompare, FileJson, Clock, Code2, Table, Sparkles, Activity, GitBranch, Link, FileSpreadsheet, Timer, Calendar, ArrowRightLeft, Database, FileJson2 } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 
 export const tools = [
+    // SQL Suite - Priority Order for Data Engineers
+    { id: "sql-code-gen", title: "SQL Code Generator", icon: Code2, path: "/sql-code-gen", category: "SQL Suite", description: "Visual query builder for SELECT, JOIN, WHERE" },
     { id: "sql", title: "SQL Formatter", icon: FileCode, path: "/sql", category: "SQL Suite", description: "Format and pretty-print SQL queries" },
-    { id: "jdbc", title: "JDBC Builder", icon: Database, path: "/jdbc", category: "SQL Suite", description: "Generate JDBC connection strings" },
+    { id: "ddl-designer", title: "DDL Designer", icon: Table, path: "/ddl-designer", category: "SQL Suite", description: "Visual builder and CSV inference for schemas" },
+    { id: "mock-data", title: "Mock Data Generator", icon: Sparkles, path: "/mock-data", category: "SQL Suite", description: "Generate huge SQL inserts with Faker.js" },
+    { id: "sql-analyzer", title: "SQL Analyzer", icon: Activity, path: "/sql-analyzer", category: "SQL Suite", description: "Static analysis for performance anti-patterns" },
+    { id: "sql-lineage", title: "SQL Lineage", icon: GitBranch, path: "/sql-lineage", category: "SQL Suite", description: "Visualize table relationships and joins" },
+    { id: "jdbc", title: "JDBC Builder", icon: Link, path: "/jdbc", category: "SQL Suite", description: "Generate JDBC connection strings" },
+
+    // Azure Suite - NEW!
+    { id: "synapse-ddl", title: "Synapse DDL Helper", icon: Database, path: "/synapse-ddl", category: "Azure Suite", description: "Generate optimized Synapse DDL with distribution" },
+    { id: "data-type-mapper", title: "Data Type Mapper", icon: ArrowRightLeft, path: "/data-type-mapper", category: "Azure Suite", description: "Convert types: SQL ↔ Synapse ↔ Spark" },
+    { id: "adf-pipeline", title: "ADF Pipeline Analyzer", icon: FileJson2, path: "/adf-pipeline", category: "Azure Suite", description: "Parse and analyze ADF pipeline JSON" },
+    { id: "trigger-visualizer", title: "Trigger Schedule Visualizer", icon: Calendar, path: "/trigger-visualizer", category: "Azure Suite", description: "Visualize ADF trigger schedules" },
+    { id: "run-analyzer", title: "Pipeline Run Analyzer", icon: Activity, path: "/run-analyzer", category: "Azure Suite", description: "Analyze pipeline run history and failures" },
+
+    // Data Formats
     { id: "json", title: "JSON Utilities", icon: Braces, path: "/json", category: "Data Formats", description: "Validate, format, and convert JSON" },
-    { id: "diff", title: "Diff Checker", icon: GitCompare, path: "/diff", category: "Utils", description: "Compare text differences side-by-side" },
     { id: "csv", title: "CSV to JSON", icon: FileJson, path: "/csv", category: "Data Formats", description: "Convert CSV data to JSON array" },
-    { id: "parquet", title: "Parquet Viewer", icon: Database, path: "/parquet", category: "Data Formats", description: "Query Parquet files with SQL (DuckDB)" },
+    { id: "parquet", title: "Parquet Viewer", icon: FileSpreadsheet, path: "/parquet", category: "Data Formats", description: "Query Parquet files with SQL (DuckDB)" },
+
+    // Time & Utils
     { id: "time", title: "Unix Time", icon: Clock, path: "/time", category: "Time & Utils", description: "Timestamp conversion utilities" },
-    { id: "cron", title: "Airflow Cron", icon: Clock, path: "/cron", category: "Time & Utils", description: "Generate Airflow DAG schedules" },
-    { id: "arn", title: "ARN Parser", icon: Database, path: "/arn", category: "Cloud Engineering", description: "Parse AWS ARN strings" },
-    { id: "sql-analyzer", title: "SQL Analyzer", icon: Database, path: "/sql-analyzer", category: "SQL Suite", description: "Static analysis for performance anti-patterns" },
-    { id: "sql-lineage", title: "SQL Lineage", icon: Database, path: "/sql-lineage", category: "SQL Suite", description: "Visualize table relationships and joins" },
-    { id: "team-time", title: "Time Conversion", icon: Clock, path: "/team-time", category: "Time & Utils", description: "Compare overlapping working hours" },
+    { id: "cron", title: "Airflow Cron", icon: Timer, path: "/cron", category: "Time & Utils", description: "Generate Airflow DAG schedules" },
+    { id: "team-time", title: "Time Conversion", icon: Calendar, path: "/team-time", category: "Time & Utils", description: "Compare overlapping working hours" },
+
+    // Utils
+    { id: "diff", title: "Diff Checker", icon: GitCompare, path: "/diff", category: "Utils", description: "Compare text differences side-by-side" },
+
+    // Cloud Engineering
 ]
 
 export function SearchDialog() {
@@ -62,7 +80,7 @@ export function SearchDialog() {
                             </div>
                             <Command.List className="max-h-[300px] overflow-y-auto overflow-x-hidden">
                                 <Command.Empty className="py-6 text-center text-sm">No results found.</Command.Empty>
-                                {["SQL Suite", "Data Formats", "Utils", "Time & Utils"].map(category => (
+                                {["SQL Suite", "Azure Suite", "Data Formats", "Utils", "Time & Utils", "Cloud Engineering"].map(category => (
                                     <Command.Group key={category} heading={category} className="overflow-hidden p-1 text-foreground [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground">
                                         {tools.filter(t => t.category === category).map(tool => (
                                             <Command.Item

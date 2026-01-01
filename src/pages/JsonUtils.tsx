@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Eraser, Play, Table as TableIcon, Code } from 'lucide-react'
+import { Eraser, Play, Table as TableIcon, Code, Minimize2, Maximize2, Download } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { Card } from '../components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
@@ -61,11 +61,43 @@ export default function JsonUtils() {
         setTableHeaders([])
     }
 
+    const [isFullScreen, setIsFullScreen] = useState(false)
+
+    const handleDownload = () => {
+        if (!formatted) return
+        const blob = new Blob([formatted], { type: 'application/json' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = 'formatted.json'
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+    }
+
     return (
-        <div className="flex-1 flex flex-col p-4 gap-4 max-w-7xl mx-auto w-full h-full">
+        <div className={`flex-1 flex flex-col p-4 gap-4 w-full h-full transition-all duration-300 ${isFullScreen ? 'fixed inset-0 z-50 bg-background' : 'max-w-7xl mx-auto'}`}>
             <div className="flex items-center justify-between">
                 <h1 className="text-2xl font-bold tracking-tight">JSON Utilities</h1>
-                <div className="flex gap-2">
+                <div className="flex gap-2 items-center">
+                    <Button variant="outline" size="sm" onClick={handleDownload} disabled={!formatted} title="Download JSON">
+                        <Download className="h-4 w-4 mr-2" />
+                        Download
+                    </Button>
+                    <div className="w-px h-6 bg-border mx-1" />
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setIsFullScreen(!isFullScreen)}
+                        title={isFullScreen ? "Exit Full Screen" : "Full Screen"}
+                    >
+                        {isFullScreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                    </Button>
+                </div>
+            </div>
+            <div className="flex items-center justify-between">
+                <div className="flex gap-2 ml-auto">
                     <Button onClick={handleFormat} className="gap-2" disabled={loading}>
                         {loading ? <Play className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
                         {loading ? 'Processing...' : 'Format/Validate'}

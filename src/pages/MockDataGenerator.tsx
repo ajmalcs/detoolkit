@@ -22,11 +22,22 @@ export default function MockDataGenerator() {
 
     const parseColumns = (sql: string) => {
         try {
-            const parser = new Parser()
-            // Some basic cleanup to help the parser
+            // Pre-process Synapse-specific syntax before parsing
             let cleanSql = sql.trim()
+
+            // Remove Synapse-specific clauses that prevent parsing
+            // Strip WITH (DISTRIBUTION = ..., HEAP/CLUSTERED COLUMNSTORE INDEX, etc.)
+            cleanSql = cleanSql.replace(/WITH\s*\([^)]*DISTRIBUTION[^)]*\)/gi, '')
+            cleanSql = cleanSql.replace(/WITH\s*\([^)]*PARTITION[^)]*\)/gi, '')
+            cleanSql = cleanSql.replace(/CLUSTERED\s+COLUMNSTORE\s+INDEX/gi, '')
+            cleanSql = cleanSql.replace(/HEAP/gi, '')
+
+            // Clean up extra whitespace
+            cleanSql = cleanSql.replace(/\s+/g, ' ').trim()
+
             if (!cleanSql.endsWith(';')) cleanSql += ';'
 
+            const parser = new Parser()
             const ast = parser.astify(cleanSql) as any
 
             if (!ast || !ast.create_definitions) {
@@ -41,18 +52,29 @@ export default function MockDataGenerator() {
 
             return { tableName, cols }
         } catch (e: any) {
-            // Fallback: Regex for simple CREATE TABLE
-            // We want this for "Valid but Parser-unfriendly" queries.
-            // BUT we also want to catch "Missing Comma" errors to trigger Auto-Fix.
+            // Fallback: Regex for Synapse/SSMS-friendly CREATE TABLE
+            // Match with square brackets and schema prefixes like [dbo].[TableName]
+            // Also handle Synapse WITH clauses
 
-            const match = sql.match(/CREATE\s+TABLE\s+(\w+)\s*\(([\s\S]*?)\);/i)
-            if (match) {
-                const tableName = match[1]
-                const colBlock = match[2]
+            // First, strip out Synapse-specific clauses
+            let cleanSql = sql
+                .replace(/WITH\s*\([^)]*DISTRIBUTION[^)]*\)/gi, '')
+                .replace(/WITH\s*\([^)]*PARTITION[^)]*\)/gi, '')
+                .replace(/CLUSTERED\s+COLUMNSTORE\s+INDEX/gi, '')
+                .replace(/HEAP/gi, '')
+                .trim()
+
+            // Match CREATE TABLE with optional schema and brackets
+            // Pattern: CREATE TABLE [schema].[table] OR CREATE TABLE table OR CREATE TABLE [table]
+            const tableMatch = cleanSql.match(/CREATE\s+TABLE\s+(?:\[?\w+\]?\.)?\[?(\w+)\]?\s*\(([\s\S]*?)\)(?:\s*;)?$/i)
+
+            if (tableMatch) {
+                const tableName = tableMatch[1]
+                const colBlock = tableMatch[2]
 
                 // VALIDATION: Check for missing commas & data types line-by-line
                 const lines = colBlock.split('\n').filter(l => l.trim().length > 0 && !l.trim().startsWith('--'))
-                const simpleColRegex = /^\s*[a-zA-Z0-9_"`\[\]]+\s+(INT|VARCHAR|TEXT|BOOLEAN|DATE|TIMESTAMP|DATETIME|FLOAT|DECIMAL|DOUBLE|REAL|CHAR|BINARY|VARBINARY|BLOB|JSON|BIT|NVARCHAR|NUMBER|STRING|BOOL)/i
+                const simpleColRegex = /^\s*[a-zA-Z0-9_"`\[\]]+\s+(INT|VARCHAR|TEXT|BOOLEAN|DATE|TIMESTAMP|DATETIME|DATETIME2|FLOAT|DECIMAL|DOUBLE|REAL|CHAR|BINARY|VARBINARY|BLOB|JSON|BIT|NVARCHAR|NCHAR|NUMBER|STRING|BOOL|BIGINT|SMALLINT|TINYINT|MONEY|UNIQUEIDENTIFIER)/i
 
                 for (let i = 0; i < lines.length; i++) {
                     const line = lines[i].trim()
@@ -70,7 +92,7 @@ export default function MockDataGenerator() {
                         }
                     } else if (/^\s*[a-zA-Z0-9_"`\[\]]+\s*(,)?\s*$/.test(line)) {
                         // Check 2: Missing Data Type
-                        const firstWord = line.split(/\s+/)[0].toUpperCase().replace(/,/g, '')
+                        const firstWord = line.split(/\s+/)[0].toUpperCase().replace(/,/g, '').replace(/\[|\]/g, '')
                         const ignoredKeywords = ['PRIMARY', 'CONSTRAINT', 'UNIQUE', 'FOREIGN', 'CHECK', 'INDEX', ')', ');']
                         if (!ignoredKeywords.includes(firstWord) && !line.startsWith(')')) {
                             throw new Error(`Syntax Error: Missing data type for column "${line.replace(/,/g, '')}"`)
@@ -89,8 +111,8 @@ export default function MockDataGenerator() {
                         let type = parts[1]
                         if (type.endsWith(',')) type = type.slice(0, -1)
 
-                        // Clean name
-                        let name = parts[0].replace(/[`"\[\]]/g, '') // remove quotes
+                        // Clean name - remove square brackets, backticks, quotes
+                        let name = parts[0].replace(/[`"\[\]]/g, '')
 
                         // Basic validation that looks like a name/type
                         if (name && /^[a-zA-Z]/.test(type)) { // Type usually starts with letter
@@ -105,7 +127,7 @@ export default function MockDataGenerator() {
             }
 
             // If regex also verified nothing useful, throw strict error
-            throw new Error(e.message || "Invalid CREATE TABLE statement")
+            throw new Error(e.message || "Invalid CREATE TABLE statement. For Synapse DDL, make sure the column definitions are inside parentheses.")
         }
     }
 

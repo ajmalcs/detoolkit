@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { Command } from "cmdk"
-import { Search, FileCode, Braces, GitCompare, FileJson, Clock, Code2, Table, Sparkles, Activity, GitBranch, Link, FileSpreadsheet, Timer, Calendar, ArrowRightLeft, Database, FileJson2 } from "lucide-react"
+import { Search, FileCode, Braces, GitCompare, FileJson, Clock, Code2, Table, Sparkles, Activity, GitBranch, Link, FileSpreadsheet, Timer, Calendar, ArrowRightLeft, Database } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 
 export const tools = [
@@ -16,7 +16,7 @@ export const tools = [
     // Azure Suite - NEW!
     { id: "synapse-ddl", title: "Synapse DDL Helper", icon: Database, path: "/synapse-ddl", category: "Azure Suite", description: "Generate optimized Synapse DDL with distribution" },
     { id: "data-type-mapper", title: "Data Type Mapper", icon: ArrowRightLeft, path: "/data-type-mapper", category: "Azure Suite", description: "Convert types: SQL ↔ Synapse ↔ Spark" },
-    { id: "adf-pipeline", title: "ADF Pipeline Analyzer", icon: FileJson2, path: "/adf-pipeline", category: "Azure Suite", description: "Parse and analyze ADF pipeline JSON" },
+    // { id: "adf-pipeline", title: "ADF Pipeline Analyzer", icon: FileJson2, path: "/adf-pipeline", category: "Azure Suite", description: "Parse and analyze ADF pipeline JSON" },
     { id: "trigger-visualizer", title: "Trigger Schedule Visualizer", icon: Calendar, path: "/trigger-visualizer", category: "Azure Suite", description: "Visualize ADF trigger schedules" },
     { id: "run-analyzer", title: "Pipeline Run Analyzer", icon: Activity, path: "/run-analyzer", category: "Azure Suite", description: "Analyze pipeline run history and failures" },
 

@@ -1,6 +1,6 @@
 import { useState, useRef, useMemo } from 'react'
 import { Eraser, Columns, Rows, FileCode, ArrowRightLeft, AlignLeft, AlertCircle, Upload, ArrowRight, ArrowLeft, Filter, Minimize2, Maximize2 } from 'lucide-react'
-import { format as formatSql, type SqlLanguage } from 'sql-formatter'
+import { format as formatSql } from 'sql-formatter'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
 import { DiffCodeEditor } from '../components/ui/code-editor'
@@ -18,26 +18,52 @@ const languages = [
     { value: 'yaml', label: 'YAML' },
 ]
 
-const sqlDialects: { value: SqlLanguage, label: string }[] = [
-    { value: 'sql', label: 'Standard SQL' },
-    { value: 'bigquery', label: 'BigQuery' },
-    { value: 'postgresql', label: 'PostgreSQL' },
-    { value: 'mysql', label: 'MySQL' },
-    { value: 'mariadb', label: 'MariaDB' },
-    { value: 'sqlite', label: 'SQLite' },
-    { value: 'snowflake', label: 'Snowflake' },
-    { value: 'redshift', label: 'Redshift' },
-    { value: 'transactsql', label: 'T-SQL (SQL Server)' },
-    { value: 'transactsql', label: 'Synapse SQL (Dedicated Pool)' },
-    { value: 'plsql', label: 'PL/SQL (Oracle)' },
-    { value: 'spark', label: 'Spark SQL' },
-]
+// Handle common ETL placeholders
+const handlePlaceholders = (sql: string): { processedSql: string, placeholders: Map<string, string> } => {
+    const placeholders = new Map<string, string>()
+    let counter = 0
+
+    let processedSql = sql
+        // $PLACEHOLDER$ (common in many ETL tools)
+        .replace(/\$[A-Z_][A-Z0-9_]*\$/g, (match) => {
+            const temp = `'PLACEHOLDER_${counter++}'`
+            placeholders.set(temp, match)
+            return temp
+        })
+        // @{placeholder} (ADF style)
+        .replace(/@\{[^}]+\}/g, (match) => {
+            const temp = `'PLACEHOLDER_${counter++}'`
+            placeholders.set(temp, match)
+            return temp
+        })
+        // {{placeholder}} (Jinja/Airflow style)
+        .replace(/\{\{[^}]+\}\}/g, (match) => {
+            const temp = `'PLACEHOLDER_${counter++}'`
+            placeholders.set(temp, match)
+            return temp
+        })
+        // ${placeholder} (bash/template style)
+        .replace(/\$\{[^}]+\}/g, (match) => {
+            const temp = `'PLACEHOLDER_${counter++}'`
+            placeholders.set(temp, match)
+            return temp
+        })
+
+    return { processedSql, placeholders }
+}
+
+const restorePlaceholders = (sql: string, placeholders: Map<string, string>): string => {
+    let result = sql
+    placeholders.forEach((original, temp) => {
+        result = result.replace(new RegExp(temp.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), original)
+    })
+    return result
+}
 
 export default function DiffChecker() {
     const [original, setOriginal] = useState('')
     const [modified, setModified] = useState('')
     const [language, setLanguage] = useState('text')
-    const [sqlDialect, setSqlDialect] = useState<SqlLanguage>('sql')
     const [sideBySide, setSideBySide] = useState(true)
     const [ignoreWhitespace, setIgnoreWhitespace] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -71,10 +97,16 @@ export default function DiffChecker() {
             }
         } else if (language === 'sql') {
             try {
-                const fmtOriginal = original ? formatSql(original, { language: sqlDialect, keywordCase: 'upper' }) : ''
-                const fmtModified = modified ? formatSql(modified, { language: sqlDialect, keywordCase: 'upper' }) : ''
-                setOriginal(fmtOriginal)
-                setModified(fmtModified)
+                // Handle placeholders in both
+                const { processedSql: procOriginal, placeholders: placeholdersOrig } = handlePlaceholders(original || '')
+                const { processedSql: procModified, placeholders: placeholdersMod } = handlePlaceholders(modified || '')
+
+                const fmtOriginal = procOriginal ? formatSql(procOriginal, { language: 'sql', keywordCase: 'upper' }) : ''
+                const fmtModified = procModified ? formatSql(procModified, { language: 'sql', keywordCase: 'upper' }) : ''
+
+                // Restore placeholders
+                setOriginal(restorePlaceholders(fmtOriginal, placeholdersOrig))
+                setModified(restorePlaceholders(fmtModified, placeholdersMod))
             } catch (e: any) {
                 console.error("SQL Format Error", e)
                 setError(`SQL Format Error: ${e.message}`)
@@ -178,18 +210,6 @@ export default function DiffChecker() {
                                 <option key={l.value} value={l.value}>{l.label}</option>
                             ))}
                         </select>
-
-                        {language === 'sql' && (
-                            <select
-                                value={sqlDialect}
-                                onChange={(e) => setSqlDialect(e.target.value as SqlLanguage)}
-                                className="h-9 w-40 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                            >
-                                {sqlDialects.map((d) => (
-                                    <option key={d.value} value={d.value}>{d.label}</option>
-                                ))}
-                            </select>
-                        )}
                     </div>
 
                     <div className="flex items-center gap-2">

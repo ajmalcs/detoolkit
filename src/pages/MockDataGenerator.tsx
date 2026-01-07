@@ -22,8 +22,23 @@ export default function MockDataGenerator() {
 
     const parseColumns = (sql: string) => {
         try {
-            // Pre-process Synapse-specific syntax before parsing
+            // Pre-process SSMS/Synapse-specific syntax before parsing
             let cleanSql = sql.trim()
+
+            // Remove SSMS script headers and comments
+            cleanSql = cleanSql.replace(/\/\*{2,}[\s\S]*?\*{2,}\//g, '') // Multi-line comments like /***....***/
+            cleanSql = cleanSql.replace(/--.*$/gm, '') // Single-line comments
+
+            // Remove T-SQL batch separators and SET commands
+            cleanSql = cleanSql.replace(/\bGO\b/gi, '')
+            cleanSql = cleanSql.replace(/SET\s+ANSI_NULLS\s+(ON|OFF)/gi, '')
+            cleanSql = cleanSql.replace(/SET\s+QUOTED_IDENTIFIER\s+(ON|OFF)/gi, '')
+
+            // Remove IDENTITY clauses from column definitions
+            cleanSql = cleanSql.replace(/IDENTITY\s*\(\s*\d+\s*,\s*\d+\s*\)/gi, '')
+
+            // Remove SQL Server filegroup clauses
+            cleanSql = cleanSql.replace(/\)\s+ON\s+\[?\w+\]?/gi, ')') // ON [PRIMARY] or ON [filegroup]
 
             // Remove Synapse-specific clauses that prevent parsing
             // Strip WITH (DISTRIBUTION = ..., HEAP/CLUSTERED COLUMNSTORE INDEX, etc.)
@@ -56,12 +71,19 @@ export default function MockDataGenerator() {
             // Match with square brackets and schema prefixes like [dbo].[TableName]
             // Also handle Synapse WITH clauses
 
-            // First, strip out Synapse-specific clauses
+            // First, strip out SSMS/Synapse/SQL Server-specific syntax
             let cleanSql = sql
-                .replace(/WITH\s*\([^)]*DISTRIBUTION[^)]*\)/gi, '')
-                .replace(/WITH\s*\([^)]*PARTITION[^)]*\)/gi, '')
-                .replace(/CLUSTERED\s+COLUMNSTORE\s+INDEX/gi, '')
-                .replace(/HEAP/gi, '')
+                .replace(/\/\*{2,}[\s\S]*?\*{2,}\//g, '') // Multi-line comments
+                .replace(/--.*$/gm, '') // Single-line comments
+                .replace(/\bGO\b/gi, '') // GO statements
+                .replace(/SET\s+ANSI_NULLS\s+(ON|OFF)/gi, '') // SET ANSI_NULLS
+                .replace(/SET\s+QUOTED_IDENTIFIER\s+(ON|OFF)/gi, '') // SET QUOTED_IDENTIFIER
+                .replace(/IDENTITY\s*\(\s*\d+\s*,\s*\d+\s*\)/gi, '') // IDENTITY clauses
+                .replace(/\)\s+ON\s+\[?\w+\]?/gi, ')') // ON [PRIMARY] or ON [filegroup]
+                .replace(/WITH\s*\([^)]*DISTRIBUTION[^)]*\)/gi, '') // Distribution
+                .replace(/WITH\s*\([^)]*PARTITION[^)]*\)/gi, '') // Partition
+                .replace(/CLUSTERED\s+COLUMNSTORE\s+INDEX/gi, '') // Clustered columnstore
+                .replace(/HEAP/gi, '') // HEAP
                 .trim()
 
             // Match CREATE TABLE with optional schema and brackets
@@ -105,17 +127,16 @@ export default function MockDataGenerator() {
                 // Instead we match ALL column-like patterns
                 const cols: { name: string, type: string }[] = []
                 lines.forEach(line => {
-                    const parts = line.trim().split(/\s+/)
-                    if (parts.length >= 2) {
-                        // Remove trailing comma from type if present
-                        let type = parts[1]
-                        if (type.endsWith(',')) type = type.slice(0, -1)
+                    // Match pattern: [ColumnName] [TYPE](params) NULL/NOT NULL
+                    // Extract column name and type (with parameters if present)
+                    const colMatch = line.trim().match(/^\s*[\[`"]?(\w+)[\]`"]?\s+[\[`"]?(\w+)(?:\([\d\s,]+\))?[\]`"]?/i)
 
-                        // Clean name - remove square brackets, backticks, quotes
-                        let name = parts[0].replace(/[`"\[\]]/g, '')
+                    if (colMatch) {
+                        const name = colMatch[1] // Column name without brackets
+                        const type = colMatch[2] // Type without brackets or parameters
 
-                        // Basic validation that looks like a name/type
-                        if (name && /^[a-zA-Z]/.test(type)) { // Type usually starts with letter
+                        // Basic validation that looks like a valid name/type
+                        if (name && type && /^[a-zA-Z]/.test(type)) {
                             cols.push({ name, type })
                         }
                     }
